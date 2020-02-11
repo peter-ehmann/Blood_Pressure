@@ -1,3 +1,7 @@
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
 # set source directory
 dir <- "~/Documents/Programming/Blood_Pressure/"
 
@@ -8,8 +12,12 @@ x$Section_Time <- as.factor(x$Section_Time)
 x$Semester <- as.factor(x$Semester)
 
 # create Category variable for BP diagnosis
-# TODO
-
+x <- x %>%
+  mutate(Category = if_else((BPsys < 120) & (BPdia < 80), 1,
+                    if_else((BPsys > 119 & BPsys < 130) & (BPdia < 80), 2,
+                    if_else((BPsys > 129 & BPsys < 140) | (BPdia < 90 & BPdia > 79), 3,
+                    if_else((BPsys > 139 & BPsys < 180) | (BPdia < 121 & BPdia > 89), 4,
+                    if_else((BPsys > 180) | (BPdia > 120), 5, 0))))))
 # data key
 # Student = ID
 # BPsys = systolic blood pressure (mmHg) --- continuous
@@ -26,11 +34,12 @@ means <- aggregate(BPsys ~ Sex, x, mean)
 summary(aov(BPsys ~ Sex, data = x))
 TukeyHSD(aov(BPsys ~ Sex, data = x))
 png(filename = paste(dir, "figures/Sex_Differences_SysBP.png", sep = ""))
-boxplot(BPsys ~ Sex, data = x, xlab = "Sex", ylab = "Systolic BP (mmHg)", xaxt = "n", outline = FALSE)
-axis(1,1:2,labels=c("Male","Female"))
-points(1:2, means$BPsys, col = "red")
-text(1:2, means$BPsys - 2.5, labels = round(means$BPsys, 1), col = "red")
-title("Sex Differences in Systolic BP")
+ggplot(x, aes(x = Sex, y = BPsys)) +
+  geom_boxplot(fill = "#A4A4A4", color = "black") +
+  scale_x_discrete(labels = c("1" = "Male", "2" = "Female")) +
+  labs(y = "Systolic BP (mmHg)\n", x = "") +
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14, face = "bold"))
 dev.off()
 
 # unpaired samples t-test on effect of Sex on DIASTOLIC BP
@@ -39,11 +48,12 @@ means <- aggregate(BPdia ~ Sex, x, mean)
 summary(aov(BPdia ~ Sex, data = x))
 TukeyHSD(aov(BPdia ~ Sex, data = x))
 png(filename = paste(dir, "figures/Sex_Differences_DiaBP.png", sep = ""))
-boxplot(BPdia ~ Sex, data = x, xlab = "Sex", ylab = "Diastolic BP (mmHg)", xaxt = "n", outline = FALSE)
-axis(1,1:2,labels=c("Male","Female"))
-points(1:2, means$BPdia, col = "red")
-text(1:2, means$BPdia - 2.5, labels = round(means$BPdia, 1), col = "red")
-title("Sex Differences in Diastolic BP")
+ggplot(x, aes(x = Sex, y = BPdia)) +
+  geom_boxplot(fill = "#A4A4A4", color = "black") +
+  scale_x_discrete(labels = c("1" = "Male", "2" = "Female")) +
+  labs(y = "Diastolic BP (mmHg)\n", x = "") +
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14, face = "bold"))
 dev.off()
 
 # one-way ANOVA on effect of Time of Day (1 = 8:40am, 2 = 1:40pm, 3 = 6:40pm) on SYSTOLIC BP
@@ -52,52 +62,64 @@ means <- aggregate(BPsys ~ Section_Time, x, mean)
 summary(aov(BPsys ~ Section_Time, data = x))
 TukeyHSD(aov(BPsys ~ Section_Time, data = x))
 png(filename = paste(dir, "figures/Time_SysBP.png", sep = ""))
-boxplot(BPsys ~ Section_Time, data = x, xlab = "Section Time", ylab = "Systolic BP (mmHg)", xaxt = "n", outline = FALSE)
-axis(1,1:3,labels=c("8:40am","1:40pm","6:40pm"))
-points(1:3, means$BPsys, col = "red")
-text(1:3, means$BPsys - 3.2, labels = round(means$BPsys, 1), col = "red")
-title("Time of Day & Systolic BP")
+ggplot(x, aes(x = Section_Time, y = BPsys)) +
+  geom_boxplot(fill = "#A4A4A4", color = "black") +
+  scale_x_discrete(labels = c("1" = "8:40am", "2" = "1:40pm", "3" = "6:40pm")) +
+  labs(y = "Systolic BP (mmHg)\n", x = "") +
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14, face = "bold"))
 dev.off()
 
 # one-way ANOVA on effect of Time of Day (1 = 8:40am, 2 = 1:40pm, 3 = 6:40pm) on DIASTOLIC BP
-# Results: 1=74.2.4, 2=71.6, 3=75.1, Time3 > Time2 significant (p=.03)
+# Results: 1=74.2, 2=71.6, 3=75.1, Time3 > Time2 significant (p=.03)
 means <- aggregate(BPdia ~ Section_Time, x, mean)
 summary(aov(BPdia ~ Section_Time, data = x))
 TukeyHSD(aov(BPdia ~ Section_Time, data = x))
 png(filename = paste(dir, "figures/Time_DiaBP.png", sep = ""))
-boxplot(BPdia ~ Section_Time, data = x, xlab = "Section Time", ylab = "Diastolic BP (mmHg)", xaxt = "n", outline = FALSE)
-axis(1,1:3,labels=c("8:40am","1:40pm","6:40pm"))
-points(1:3, means$BPdia, col = "red")
-text(1:3, means$BPdia - 1.8, labels = round(means$BPdia, 1), col = "red")
-title("Time of Day & Systolic BP")
+ggplot(x, aes(x = Section_Time, y = BPdia)) +
+  geom_boxplot(fill = "#A4A4A4", color = "black") +
+  scale_x_discrete(labels = c("1" = "8:40am", "2" = "1:40pm", "3" = "6:40pm")) +
+  labs(y = "Diastolic BP (mmHg)\n", x = "") +
+  theme(axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14, face = "bold"))
 dev.off()
 
 # linear regression of BMI on SYSTOLIC BP
-# Results: for every 1 unit increase in BMI, systolic BP is 0.9 mmHg greater (p<.001)
+# Results: for every 1 unit increase in BMI, systolic BP is 0.97 mmHg greater (p<.001)
 # no differences in BMI by Sex (males 1.75 units greater)
+# no interaction between BMI and Sex on Systolic BP
 sys_model <- lm(BPsys ~ BMI + Sex + BMI*Sex, data = x)
-png(filename = paste(dir, "figures/BMI_SysBP.png", sep = ""))
-plot(x$BMI, x$BPsys, xlab = "BMI (kg/m^2)", ylab = "Systolic BP (mmHg)")
-abline(sys_model)
 summary(sys_model)
-title("Relationship between BMI and Systolic BP")
+png(filename = paste(dir, "figures/BMI_SysBP.png", sep = ""))
+ggplot(x, aes(x = BMI, y = BPsys, color = Sex)) +
+  geom_point() +
+  geom_smooth(method = "lm", fill = NA) +
+  labs(y = "Systolic BP (mmHg)\n", x = "\nBMI (kg/m^2)") +
+  scale_color_discrete(name = "", labels = c("Male", "Female")) +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 13, face = "bold"))
 dev.off()
-
-# plot of BMI x Systolic BP split by Sex
-# TODO
 
 # linear regression of BMI on DIASTOLIC BP
-# Results: for every 1 unit increase in BMI, systolic BP is 0.5 mmHg greater (p<.001)
+# Results: for every 1 unit increase in BMI, systolic BP is 0.97 mmHg greater (p<.001)
+# Males have significantly higher (+17 mmHg) Diastolic BP than females
+# Interaction between BMI and Sex on Diastolic BP is significant
 dia_model <- lm(BPdia ~ BMI + Sex + BMI*Sex, data = x)
-png(filename = paste(dir, "figures/BMI_DiaBP.png", sep = ""))
-plot(x$BMI, x$BPdia, xlab = "BMI (kg/m^2)", ylab = "Diastolic BP (mmHg)")
-abline(dia_model)
 summary(dia_model)
-title("Relationship between BMI and Systolic BP")
+png(filename = paste(dir, "figures/BMI_DiaBP.png", sep = ""))
+ggplot(x, aes(x = BMI, y = BPdia, color = Sex)) +
+  geom_point() +
+  geom_smooth(method = "lm", fill = NA) +
+  labs(y = "Diastolic BP (mmHg)\n", x = "\nBMI (kg/m^2)") +
+  scale_color_discrete(name = "", labels = c("Male", "Female")) +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 13, face = "bold"))
 dev.off()
 
-# plot of BMI x Diastolic BP split by Sex
-# TODO
-
-# table of BP categories by Sex
-# TODO
+# table of BP categories counts
+kable(
+  x %>% group_by(Category) %>%
+    summarise(count = n(),
+              percent = n()*100/nrow(x),
+              avgBMI = mean(BMI))
+)
